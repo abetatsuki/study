@@ -1,29 +1,39 @@
 using UnityEngine;
 using System.Collections;
-public class SimpleMove : MonoBehaviour
+
+public class JumpExample : MonoBehaviour
 {
-    public Vector3 destination = new Vector3(5, 0, 0);
-    public float delay = 1f;
+    public float jumpHeight = 2f;
     public float duration = 1f;
 
-    void Start()
+    void Update()
     {
-        StartCoroutine(Move());
-       
+        if (Input.GetKeyDown(KeyCode.Space))
+            StartCoroutine(Jump());
     }
 
-    IEnumerator Move()
+    IEnumerator Jump()
     {
-        float t = 0f;
         Vector3 start = transform.position;
+        float t = 0f;
 
         while (t < duration)
         {
             t += Time.deltaTime;
-            transform.position = Vector3.Lerp(start, destination, t / duration);
+            float normalized = t / duration;
+
+           
+            float x = start.x;
+            float z = start.z;
+
+            
+            float y = start.y + jumpHeight * 4 * normalized * (1 - normalized);
+
+            transform.position = new Vector3(x, y, z);
             yield return null;
         }
 
-        transform.position = destination; 
+       
+        transform.position = start;
     }
 }
