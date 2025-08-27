@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Study08272a : MonoBehaviour
+public class Study08272ab : MonoBehaviour
 {
     [SerializeField] Transform player;
     [SerializeField] Transform enemy;
