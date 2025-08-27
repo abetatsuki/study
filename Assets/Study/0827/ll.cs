@@ -1,30 +1,34 @@
 using UnityEngine;
 using System.Collections;
-
-public class JumpForwardQueue : MonoBehaviour
+public class JumpForward12 : MonoBehaviour
 {
-    public float jumpHeight = 2f; // ジャンプの高さ
-    public float duration = 0.5f; // ジャンプにかかる時間
-    public float step = 1f;       // 前に進む距離（1マス）
+    public float jumpHeight = 2f;
+    public float duration = 0.5f;
+    public float step = 1f;
+    [SerializeField] Transform player;
     [SerializeField] Transform[] enemies;
 
     public Vector3 size = new Vector3(1, 1, 1);
 
-    private bool isJumping = false;
-    private bool isFalling = false;
+    private Coroutine currentJump;   // 現在のジャンプコルーチン
+    private Coroutine currentFall;   // 現在の落下コルーチン
 
     void Update()
     {
-        // 前の処理中は入力を無視
-        if (!isJumping && !isFalling && Input.GetKeyDown(KeyCode.Space))
+        // ジャンプ入力
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            StartCoroutine(Jump());
+            // 既存のジャンプ・落下を停止
+            if (currentJump != null) StopCoroutine(currentJump);
+            if (currentFall != null) StopCoroutine(currentFall);
+
+            currentJump = StartCoroutine(Jump());
         }
 
         // 敵との衝突チェック
         foreach (Transform enemy in enemies)
         {
-            if (CheckCubeCollision(transform.position, size, enemy.position, enemy.localScale))
+            if (CheckCubeCollision(player.position, player.localScale, enemy.position, enemy.localScale))
             {
                 Debug.Log(enemy.name + " と衝突！");
             }
@@ -33,7 +37,6 @@ public class JumpForwardQueue : MonoBehaviour
 
     IEnumerator Jump()
     {
-        isJumping = true;
         Vector3 start = transform.position;
         Vector3 end = start + new Vector3(step, 0, 0);
         float t = 0f;
@@ -42,17 +45,18 @@ public class JumpForwardQueue : MonoBehaviour
         {
             t += Time.deltaTime;
             float normalized = t / duration;
+
             float x = Mathf.Lerp(start.x, end.x, normalized);
             float y = start.y + jumpHeight * 4 * normalized * (1 - normalized);
 
             Vector3 newPos = new Vector3(x, y, start.z);
 
+            // 衝突チェック
             foreach (Transform enemy in enemies)
             {
                 if (CheckCubeCollision(newPos, size, enemy.position, enemy.localScale))
                 {
                     Debug.Log(enemy.name + " に衝突したのでジャンプ中断");
-                    isJumping = false;
                     yield break;
                 }
             }
@@ -62,22 +66,21 @@ public class JumpForwardQueue : MonoBehaviour
         }
 
         transform.position = end;
-        isJumping = false;
 
+        // ジャンプ後に落下
         if (!IsGrounded(transform.position))
         {
-            StartCoroutine(Fall());
+            currentFall = StartCoroutine(Fall());
         }
+
+        currentJump = null;
     }
 
     IEnumerator Fall()
     {
-        if (isFalling) yield break;
-        isFalling = true;
-
         Vector3 start = transform.position;
         Vector3 end = new Vector3(start.x, 0f, start.z);
-        float fallDuration = 0.1f;
+        float fallDuration = 0.5f;
         float t = 0f;
 
         while (t < fallDuration)
@@ -98,18 +101,19 @@ public class JumpForwardQueue : MonoBehaviour
         }
 
         transform.position = end;
-        isFalling = false;
 
+        // 再落下チェック
         if (!IsGrounded(transform.position))
         {
-            StartCoroutine(Fall());
+            currentFall = StartCoroutine(Fall());
+        }
+        else
+        {
+            currentFall = null;
         }
     }
 
-    bool IsGrounded(Vector3 pos)
-    {
-        return pos.y <= 0.01f;
-    }
+    bool IsGrounded(Vector3 pos) => pos.y <= 0.01f;
 
     public bool CheckCubeCollision(Vector3 posA, Vector3 sizeA, Vector3 posB, Vector3 sizeB)
     {
